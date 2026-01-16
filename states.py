@@ -7,8 +7,9 @@ from aiogram.fsm.state import State, StatesGroup
 
 class OrderStates(StatesGroup):
     """Состояния процесса заказа"""
-    # Выбор категории и товаров
+    # Выбор категории, подкатегории и товаров
     choosing_category = State()
+    choosing_subcategory = State()
     choosing_product = State()
     
     # Оформление заказа

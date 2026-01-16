@@ -65,11 +65,11 @@ class CartService:
         lines = ["📦 Ваш заказ:\n"]
         for product_name, quantity, total_price in items:
             lines.append(
-                f"• {product_name} x{quantity} = {total_price}₽"
+                f"• {product_name} x{quantity} = {total_price} TL"
             )
         
         total_sum = self.get_total_sum(user_id)
-        lines.append(f"\n💰 Итого: {total_sum}₽")
+        lines.append(f"\n💰 Итого: {total_sum} TL")
         
         return "\n".join(lines)
 

@@ -104,9 +104,9 @@ class OrderService:
         
         lines.append("\n📦 Заказ:")
         for product_name, quantity, total_price in items:
-            lines.append(f"   • {product_name} x{quantity} = {total_price}₽")
+            lines.append(f"   • {product_name} x{quantity} = {total_price} TL")
         
-        lines.append(f"\n💰 Итого: {total_sum}₽")
+        lines.append(f"\n💰 Итого: {total_sum} TL")
         
         return "\n".join(lines)
     
@@ -125,9 +125,9 @@ class OrderService:
         
         lines.append("📦 Заказ:")
         for product_name, quantity, total_price in order['items']:
-            lines.append(f"   • {product_name} x{quantity} = {total_price}₽")
+            lines.append(f"   • {product_name} x{quantity} = {total_price} TL")
         
-        lines.append(f"\n💰 Итого: {order['total_sum']}₽")
+        lines.append(f"\n💰 Итого: {order['total_sum']} TL")
         
         return "\n".join(lines)
     
@@ -143,7 +143,7 @@ class OrderService:
             timestamp = order['timestamp'].strftime('%d.%m.%Y %H:%M')
             lines.append(
                 f"{status_emoji} Заказ #{order['order_id']} | "
-                f"{order['total_sum']}₽ | {timestamp} | "
+                f"{order['total_sum']} TL | {timestamp} | "
                 f"@{order['username']}"
             )
         

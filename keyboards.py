@@ -2,9 +2,20 @@
 """
 Клавиатуры для бота
 Все кнопки через InlineKeyboard
+Поддерживает категории с подкатегориями
+Использует индексы в callback_data для экономии места
 """
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from data import get_categories, get_products_by_category, get_product_name
+from data import (
+    get_categories,
+    get_products_by_category,
+    get_subcategories,
+    get_products_by_subcategory,
+    get_product_name,
+    has_subcategories,
+    get_category_index,
+    get_subcategory_index,
+)
 
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:
@@ -14,9 +25,10 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     
     # Создаем кнопки для каждой категории
     for category in categories:
+        cat_idx = get_category_index(category)
         buttons.append([InlineKeyboardButton(
             text=category,
-            callback_data=f"category_{category}"
+            callback_data=f"cat_{cat_idx}"
         )])
     
     # Кнопка корзины (если есть товары)
@@ -28,20 +40,19 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def get_products_keyboard(category: str) -> InlineKeyboardMarkup:
-    """Клавиатура с товарами категории"""
-    products = get_products_by_category(category)
+def get_subcategories_keyboard(category: str) -> InlineKeyboardMarkup:
+    """Клавиатура с подкатегориями категории"""
+    subcategories = get_subcategories(category)
     buttons = []
     
-    # Создаем кнопки для каждого товара с отображением цены
-    for product in products:
-        product_name = get_product_name(product)
-        product_price = product.get("price", 0)
-        # Форматируем текст кнопки: "Название - Цена₽"
-        button_text = f"{product_name} - {product_price}₽"
+    cat_idx = get_category_index(category)
+    
+    # Создаем кнопки для каждой подкатегории
+    for subcategory in subcategories:
+        sub_idx = get_subcategory_index(cat_idx, subcategory)
         buttons.append([InlineKeyboardButton(
-            text=button_text,
-            callback_data=f"product_{category}_{product_name}"
+            text=subcategory,
+            callback_data=f"sub_{cat_idx}_{sub_idx}"
         )])
     
     # Кнопка "Назад"
@@ -49,6 +60,55 @@ def get_products_keyboard(category: str) -> InlineKeyboardMarkup:
         text="◀️ Назад",
         callback_data="back_to_menu"
     )])
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_products_keyboard(category: str, subcategory: str = None) -> InlineKeyboardMarkup:
+    """Клавиатура с товарами категории или подкатегории"""
+    if subcategory:
+        # Товары подкатегории
+        products = get_products_by_subcategory(category, subcategory)
+    else:
+        # Товары категории (без подкатегорий)
+        products = get_products_by_category(category)
+    
+    buttons = []
+    
+    cat_idx = get_category_index(category)
+    
+    # Создаем кнопки для каждого товара с отображением цены
+    for idx, product in enumerate(products):
+        product_name = get_product_name(product)
+        product_price = product.get("price", 0)
+        # Форматируем текст кнопки: "Название - Цена TL"
+        button_text = f"{product_name} - {product_price} TL"
+        
+        # Формируем callback_data в зависимости от наличия подкатегории
+        if subcategory:
+            sub_idx = get_subcategory_index(cat_idx, subcategory)
+            callback_data = f"prod_{cat_idx}_{sub_idx}_{idx}"
+        else:
+            callback_data = f"prod_{cat_idx}_{idx}"
+        
+        buttons.append([InlineKeyboardButton(
+            text=button_text,
+            callback_data=callback_data
+        )])
+    
+    # Кнопка "Назад"
+    if subcategory:
+        # Если есть подкатегория, возвращаемся к списку подкатегорий
+        buttons.append([InlineKeyboardButton(
+            text="◀️ Назад",
+            callback_data=f"cat_{cat_idx}"
+        )])
+    else:
+        # Если нет подкатегории, возвращаемся в главное меню
+        buttons.append([InlineKeyboardButton(
+            text="◀️ Назад",
+            callback_data="back_to_menu"
+        )])
     
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
