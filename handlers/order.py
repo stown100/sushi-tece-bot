@@ -9,7 +9,7 @@ from keyboards import get_contact_keyboard, get_main_menu_keyboard
 from services.cart import cart_service
 from services.order import order_service
 from states import OrderStates
-from config import ADMIN_ID
+from config import ADMIN_IDS
 
 router = Router()
 
@@ -84,12 +84,13 @@ async def _process_order_completion(message: Message, state: FSMContext, phone: 
     )
     order_text += f"\n\n🆔 ID заказа: #{order_id}"
     
-    # Отправляем заказ администратору
-    if ADMIN_ID:
-        try:
-            await message.bot.send_message(chat_id=ADMIN_ID, text=order_text)
-        except Exception as e:
-            print(f"Ошибка отправки заказа администратору: {e}")
+    # Отправляем заказ всем администраторам
+    if ADMIN_IDS:
+        for admin_id in ADMIN_IDS:
+            try:
+                await message.bot.send_message(chat_id=admin_id, text=order_text)
+            except Exception as e:
+                print(f"Ошибка отправки заказа администратору {admin_id}: {e}")
     
     # Очищаем корзину
     cart_service.clear_cart(user_id)

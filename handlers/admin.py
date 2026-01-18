@@ -4,7 +4,7 @@
 """
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from config import ADMIN_ID
+from config import ADMIN_IDS
 from services.order import order_service
 
 router = Router()
@@ -12,7 +12,7 @@ router = Router()
 
 def is_admin(user_id: int) -> bool:
     """Проверка, является ли пользователь администратором"""
-    return ADMIN_ID and user_id == ADMIN_ID
+    return user_id in ADMIN_IDS
 
 
 def _create_orders_keyboard(orders: list) -> InlineKeyboardMarkup:
