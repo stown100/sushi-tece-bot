@@ -2,30 +2,31 @@
 """
 Сервис для управления корзиной пользователя
 Корзина хранится в памяти (словарь)
+Товары идентифицируются по slug из Sanity
 """
 from typing import Dict, List, Tuple
-from data import get_product_price
+from data import get_product_price, get_product_name_by_slug
 
 
 class CartService:
     """Сервис для работы с корзиной"""
     
     def __init__(self):
-        # Структура: {user_id: {product_name: quantity}}
+        # Структура: {user_id: {product_slug: quantity}}
         self._carts: Dict[int, Dict[str, int]] = {}
     
-    def add_product(self, user_id: int, product_name: str) -> None:
-        """Добавить товар в корзину"""
+    def add_product(self, user_id: int, product_slug: str) -> None:
+        """Добавить товар в корзину по slug"""
         if user_id not in self._carts:
             self._carts[user_id] = {}
         
-        if product_name in self._carts[user_id]:
-            self._carts[user_id][product_name] += 1
+        if product_slug in self._carts[user_id]:
+            self._carts[user_id][product_slug] += 1
         else:
-            self._carts[user_id][product_name] = 1
+            self._carts[user_id][product_slug] = 1
     
     def get_cart(self, user_id: int) -> Dict[str, int]:
-        """Получить корзину пользователя"""
+        """Получить корзину пользователя {slug: quantity}"""
         return self._carts.get(user_id, {})
     
     def get_cart_items(self, user_id: int) -> List[Tuple[str, int, int]]:
@@ -35,8 +36,9 @@ class CartService:
         """
         cart = self.get_cart(user_id)
         items = []
-        for product_name, quantity in cart.items():
-            price = get_product_price(product_name)
+        for product_slug, quantity in cart.items():
+            price = get_product_price(product_slug)
+            product_name = get_product_name_by_slug(product_slug)
             total_price = price * quantity
             items.append((product_name, quantity, total_price))
         return items

@@ -44,4 +44,7 @@ if not ADMIN_IDS and ADMIN_ID_STR:
 # Для обратной совместимости: первый ID (если есть)
 ADMIN_ID = ADMIN_IDS[0] if ADMIN_IDS else 0
 
-# Цены товаров теперь хранятся в data.py для каждого товара индивидуально
+# Sanity CMS
+SANITY_PROJECT_ID = os.getenv("SANITY_PROJECT_ID", "").strip()
+SANITY_DATASET = os.getenv("SANITY_DATASET", "").strip()
+SANITY_API_VERSION = os.getenv("SANITY_API_VERSION", "").strip()
