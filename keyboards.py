@@ -15,6 +15,8 @@ from data import (
     has_subcategories,
     get_category_index,
     get_subcategory_index,
+    get_subcategory_display_name,
+    get_category_display_name,
 )
 
 
@@ -26,8 +28,9 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     # Создаем кнопки для каждой категории
     for category in categories:
         cat_idx = get_category_index(category)
+        display_name = get_category_display_name(category)
         buttons.append([InlineKeyboardButton(
-            text=category,
+            text=display_name,
             callback_data=f"cat_{cat_idx}"
         )])
     
@@ -50,8 +53,9 @@ def get_subcategories_keyboard(category: str) -> InlineKeyboardMarkup:
     # Создаем кнопки для каждой подкатегории
     for subcategory in subcategories:
         sub_idx = get_subcategory_index(cat_idx, subcategory)
+        display_name = get_subcategory_display_name(category, subcategory)
         buttons.append([InlineKeyboardButton(
-            text=subcategory,
+            text=display_name,
             callback_data=f"sub_{cat_idx}_{sub_idx}"
         )])
     

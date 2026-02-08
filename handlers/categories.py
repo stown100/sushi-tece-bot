@@ -21,9 +21,12 @@ from data import (
     get_subcategories,
     get_category_name,
     get_subcategory_name,
+    get_category_display_name,
+    get_subcategory_display_name,
     get_products_by_category,
     get_products_by_subcategory,
     get_product_name,
+    get_product_slug,
 )
 
 
@@ -80,7 +83,8 @@ async def choose_category(callback: CallbackQuery, state: FSMContext):
                 await callback.answer("Ошибка: подкатегории не найдены", show_alert=True)
                 return
             
-            text = f"📋 {category}:\n\nВыберите подкатегорию:"
+            cat_display = get_category_display_name(category)
+            text = f"📋 {cat_display}:\n\nВыберите подкатегорию:"
             keyboard = get_subcategories_keyboard(category)
             await callback.message.edit_text(
                 text=text,
@@ -89,7 +93,8 @@ async def choose_category(callback: CallbackQuery, state: FSMContext):
             await state.set_state(OrderStates.choosing_subcategory)
         else:
             # Показываем товары категории напрямую
-            text = f"📋 {category}:\n\nВыберите товар:"
+            cat_display = get_category_display_name(category)
+            text = f"📋 {cat_display}:\n\nВыберите товар:"
             keyboard = get_products_keyboard(category)
             await callback.message.edit_text(
                 text=text,
@@ -138,7 +143,9 @@ async def choose_subcategory(callback: CallbackQuery, state: FSMContext):
         )
         
         # Показываем товары подкатегории
-        text = f"📋 {category} - {subcategory}:\n\nВыберите товар:"
+        cat_display = get_category_display_name(category)
+        sub_display = get_subcategory_display_name(category, subcategory)
+        text = f"📋 {cat_display} - {sub_display}:\n\nВыберите товар:"
         await callback.message.edit_text(
             text=text,
             reply_markup=get_products_keyboard(category, subcategory)
@@ -220,13 +227,14 @@ async def choose_product(callback: CallbackQuery, state: FSMContext):
         
         product = products[prod_idx]
         product_name = get_product_name(product)
+        product_slug = get_product_slug(product)
         
-        # Добавляем товар в корзину
+        # Добавляем товар в корзину по slug
         user_id = callback.from_user.id
-        cart_service.add_product(user_id, product_name)
+        cart_service.add_product(user_id, product_slug)
         
         # Получаем цену товара
-        price = get_product_price(product_name)
+        price = get_product_price(product_slug)
         
         # Показываем сообщение об успешном добавлении
         text = (
