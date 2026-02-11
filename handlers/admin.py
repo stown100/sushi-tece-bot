@@ -5,6 +5,7 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from config import ADMIN_IDS
+from data import refresh_menu
 from services.order import order_service
 
 router = Router()
@@ -53,6 +54,18 @@ def _create_order_status_keyboard(order_id: int, status: str) -> InlineKeyboardM
     )])
     
     return InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+
+
+@router.message(F.text == "/refresh")
+async def cmd_refresh(message: Message):
+    """Обновить меню из Sanity (только для администратора)"""
+    if not is_admin(message.from_user.id):
+        await message.answer("❌ У вас нет доступа к этой команде")
+        return
+
+    await message.answer("⏳ Загружаю меню из Sanity...")
+    _, text = refresh_menu()
+    await message.answer(text)
 
 
 @router.message(F.text == "/orders")
