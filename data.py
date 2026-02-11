@@ -6,9 +6,9 @@
 Язык меню: ru
 """
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
-from services.sanity import fetch_products
+from services.sanity import fetch_products, fetch_categories
 
 # Язык для меню
 LANG = "ru"
@@ -28,8 +28,8 @@ MENU_LABELS: Dict[str, str] = {
     "pasta-risotto": "🍝 Паста и ризотто",
     "hot-dishes": "🍗 Горячие блюда",
     "pizza": "🍕 Пиццы",
-    "utensils": "🍴 Приборы",
-    # Подкатегории
+    "drinks": "🥤 Напитки",
+    # Подкатегории суши/роллов
     "sushi-burger": "🍔 Суши бургер",
     "philadelphia": "🧀 Филадельфия",
     "california": "🥑 Калифорния",
@@ -37,6 +37,16 @@ MENU_LABELS: Dict[str, str] = {
     "futo-maki": "🍣 Футо маки",
     "nigiri": "🍥 Нигири",
     "baked-rolls": "🔥 Запечённые роллы",
+    # Подкатегории напитков
+    "coffee": "☕ Кофе",
+    "milk-shakes": "🥛 Молочные коктейли",
+    "tea": "🍵 Чай",
+    "cold-drinks": "🧊 Холодные напитки",
+    "fresh-juice": "🍊 Свежевыжатые соки",
+    "lemonade": "🍋 Лимонады",
+    "smoothie": "🥤 Смузи",
+    "energy": "⚡ Энергетики",
+    "cocktails": "🍹 Коктейли",
 }
 
 
@@ -76,23 +86,46 @@ def _get_display_name(name_obj: Any) -> str:
     return name_obj.get(LANG) or name_obj.get("ru") or name_obj.get("en") or ""
 
 
-def _build_products_from_sanity(raw_products: List[Dict]) -> None:
+def _to_slug(val: Any) -> str:
+    """Извлекает slug-строку из category/subcategory (может быть строка, reference или slug-объект Sanity)"""
+    if val is None:
+        return ""
+    if isinstance(val, str):
+        return val.strip()
+    if isinstance(val, dict):
+        # Sanity slug: {"_type": "slug", "current": "sets"} или reference с полем slug
+        slug = val.get("current") or val.get("slug")
+        if isinstance(slug, dict):
+            slug = slug.get("current") or slug.get("slug")
+        if isinstance(slug, str):
+            return slug.strip()
+    return ""
+
+
+def _build_products_from_sanity(raw_products: List[Dict], raw_categories: List[Dict]) -> None:
     """
-    Строит PRODUCTS из сырых данных Sanity.
-    Группирует по category, затем по subcategory (если есть).
+    Строит PRODUCTS из категорий и продуктов Sanity.
+    Категории берутся из *[_type == "category"], продукты — из products.
+    Все категории из Sanity отображаются, даже без товаров.
     """
     global PRODUCTS, PRODUCT_PRICES, SLUG_TO_NAME
 
-    # Используем OrderedDict для сохранения порядка категорий/подкатегорий
-    hierarchy: Dict[str, Union[List, Dict]] = OrderedDict()
+    # Сначала загружаем категории в порядке из Sanity (исключаем utensils)
+    category_slugs: List[str] = []
+    for c in raw_categories or []:
+        slug = _to_slug(c.get("slug"))
+        if slug and slug != "utensils":
+            category_slugs.append(slug)
+    hierarchy: Dict[str, Union[List, Dict]] = OrderedDict((cat, []) for cat in category_slugs)
 
+    # Обрабатываем продукты
     for p in raw_products:
-        slug = p.get("slug") or p.get("_id", "")
+        slug = _to_slug(p.get("slug")) or (p.get("_id") or "")
         if not slug:
             continue
 
-        category = (p.get("category") or "").strip()
-        subcategory = (p.get("subcategory") or "").strip()
+        category = _to_slug(p.get("category"))
+        subcategory = _to_slug(p.get("subcategory"))
         price = int(p.get("price") or 0)
         name_obj = p.get("name")
         display_name = _get_display_name(name_obj) or slug
@@ -107,6 +140,8 @@ def _build_products_from_sanity(raw_products: List[Dict]) -> None:
 
         if not category:
             continue
+        if category not in hierarchy:
+            hierarchy[category] = []  # Неизвестная категория — добавляем в конец
 
         if subcategory:
             if category not in hierarchy:
@@ -166,13 +201,33 @@ def _build_indexes() -> None:
 
 def _load_from_sanity() -> None:
     """Загружает данные из Sanity и строит индексы"""
-    raw = fetch_products()
-    _build_products_from_sanity(raw)
+    raw_categories = fetch_categories()
+    raw_products = fetch_products()
+    _build_products_from_sanity(raw_products, raw_categories)
     _build_indexes()
 
 
 # Инициализация при импорте
 _load_from_sanity()
+
+
+def refresh_menu() -> tuple[bool, str]:
+    """
+    Обновить меню из Sanity CMS.
+    Возвращает (success, message) — успех и сообщение для пользователя.
+    """
+    try:
+        raw_categories = fetch_categories()
+        raw_products = fetch_products()
+        _build_products_from_sanity(raw_products, raw_categories)
+        _build_indexes()
+        total = sum(
+            len(v) if isinstance(v, list) else sum(len(sub) for sub in v.values())
+            for v in PRODUCTS.values()
+        )
+        return True, f"✅ Меню обновлено. Загружено {len(PRODUCTS)} категорий, {total} товаров."
+    except Exception as e:
+        return False, f"❌ Ошибка обновления меню: {e}"
 
 
 def get_categories() -> List[str]:
